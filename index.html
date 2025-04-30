@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Photo Frame Overlay with Zoom and Counters</title>
+  <title>IDLC Photo Frame</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -76,7 +76,7 @@
     <input type="file" accept="image/*" id="upload" />
     <button id="zoomIn">Zoom In</button>
     <button id="zoomOut">Zoom Out</button>
-    <button id="download">Download Composite</button>
+    <button id="download">Download IDLC Photo</button>
   </div>
 
   <div id="editor">
@@ -182,8 +182,8 @@
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      imgX = x - offsetX;
-      imgY = y - offsetY;
+      imgX = Math.min(Math.max(x - offsetX, 0), canvas.width - uploadedImg.width * scale);
+      imgY = Math.min(Math.max(y - offsetY, 0), canvas.height - uploadedImg.height * scale);
 
       drawComposite();
     });
@@ -222,8 +222,8 @@
         const dx = touch.clientX - lastTouch.x;
         const dy = touch.clientY - lastTouch.y;
 
-        imgX += dx;
-        imgY += dy;
+        imgX = Math.min(Math.max(imgX + dx, 0), canvas.width - uploadedImg.width * scale);
+        imgY = Math.min(Math.max(imgY + dy, 0), canvas.height - uploadedImg.height * scale);
 
         lastTouch.x = touch.clientX;
         lastTouch.y = touch.clientY;
@@ -237,6 +237,8 @@
         const scaleFactor = distance / lastTouch.scale;
 
         scale *= scaleFactor;
+        scale = Math.max(0.5, Math.min(scale, 2)); // Limit zoom scale (e.g., 0.5x to 2x)
+
         adjustAfterZoom();
 
         lastTouch.scale = distance;
@@ -253,20 +255,22 @@
     zoomInBtn.addEventListener('click', () => {
       if (!uploadedImg) return;
       scale *= 1.1;
+      scale = Math.min(scale, 2); // Limit max zoom
       adjustAfterZoom();
     });
 
     zoomOutBtn.addEventListener('click', () => {
       if (!uploadedImg) return;
       scale *= 0.9;
+      scale = Math.max(scale, 0.5); // Limit min zoom
       adjustAfterZoom();
     });
 
     function adjustAfterZoom() {
       const imgWidth = uploadedImg.width * scale;
       const imgHeight = uploadedImg.height * scale;
-      imgX = imgX - (imgWidth - uploadedImg.width * (scale / 1.1)) / 2;
-      imgY = imgY - (imgHeight - uploadedImg.height * (scale / 1.1)) / 2;
+      imgX = Math.min(Math.max(imgX, 0), canvas.width - imgWidth);
+      imgY = Math.min(Math.max(imgY, 0), canvas.height - imgHeight);
       drawComposite();
     }
 
