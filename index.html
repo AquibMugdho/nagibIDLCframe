@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Photo Frame Overlay with Zoom and Counters</title>
+  <title>IDLC photo frame</title>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-82C5ZZDF6X"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -53,6 +53,7 @@
     input[type="file"] {
       display: block;
     }
+    
     button {
       padding: 0.5rem 1rem;
       font-size: 1rem;
@@ -79,21 +80,19 @@
 </head>
 <body>
   <header>
-    <h1>Upload and Adjust Your Photo</h1>
+    <h1>Upload and get your IDLC photo!</h1>
   </header>
 
   <div class="controls">
-    <input type="file" accept="image/*" id="upload" />
+    <input type="file" accept="image/*" id="upload"/>
     <button id="zoomIn">Zoom In</button>
     <button id="zoomOut">Zoom Out</button>
-    <button id="download">Download Composite</button>
+    <button id="download">Download ILDC photo</button>
   </div>
 
   <div id="editor">
     <canvas id="canvas"></canvas>
   </div>
-
- 
 
   <script>
     const upload = document.getElementById('upload');
@@ -103,7 +102,6 @@
     const zoomOutBtn = document.getElementById('zoomOut');
     const download = document.getElementById('download');
 
-
     let uploadedImg = null;
     let frameImage = new Image();
     let imgX = 0, imgY = 0;
@@ -111,11 +109,8 @@
     let isDragging = false;
     let offsetX = 0, offsetY = 0;
 
-    
-
-    // Load the frame and set canvas size
-    frameImage.src = 'IDLCframe.png';
-    frameImage.onload = function () {
+    frameImage.src = 'IDLCframe.png'; // replace with your frame image path
+    frameImage.onload = () => {
       canvas.width = frameImage.width;
       canvas.height = frameImage.height;
       drawComposite();
@@ -155,7 +150,7 @@
       reader.readAsDataURL(file);
     });
 
-    // Drag to move image (Desktop)
+    // Desktop drag
     canvas.addEventListener('mousedown', (e) => {
       if (!uploadedImg) return;
       const rect = canvas.getBoundingClientRect();
@@ -181,8 +176,24 @@
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      imgX = Math.min(Math.max(x - offsetX, 0), canvas.width - uploadedImg.width * scale);
-      imgY = Math.min(Math.max(y - offsetY, 0), canvas.height - uploadedImg.height * scale);
+      const imgWidth = uploadedImg.width * scale;
+      const imgHeight = uploadedImg.height * scale;
+
+      imgX = x - offsetX;
+      imgY = y - offsetY;
+
+      // Allow free movement when zoomed in
+      if (imgWidth <= canvas.width) {
+        imgX = Math.max(Math.min(imgX, canvas.width - imgWidth), 0);
+      } else {
+        imgX = Math.min(Math.max(imgX, canvas.width - imgWidth), 0);
+      }
+
+      if (imgHeight <= canvas.height) {
+        imgY = Math.max(Math.min(imgY, canvas.height - imgHeight), 0);
+      } else {
+        imgY = Math.min(Math.max(imgY, canvas.height - imgHeight), 0);
+      }
 
       drawComposite();
     });
@@ -190,7 +201,7 @@
     canvas.addEventListener('mouseup', () => isDragging = false);
     canvas.addEventListener('mouseleave', () => isDragging = false);
 
-    // Touch events for mobile devices
+    // Touch support
     let lastTouch = { x: 0, y: 0, scale: 1 };
 
     canvas.addEventListener('touchstart', (e) => {
@@ -198,16 +209,12 @@
       e.preventDefault();
 
       if (e.touches.length === 1) {
-        // For drag (touchmove)
         const touch = e.touches[0];
         lastTouch.x = touch.clientX;
         lastTouch.y = touch.clientY;
       } else if (e.touches.length === 2) {
-        // For pinch-to-zoom
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
-        lastTouch.scale = distance;
+        const [t1, t2] = e.touches;
+        lastTouch.scale = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       }
     });
 
@@ -216,27 +223,39 @@
       e.preventDefault();
 
       if (e.touches.length === 1) {
-        // Drag image
         const touch = e.touches[0];
         const dx = touch.clientX - lastTouch.x;
         const dy = touch.clientY - lastTouch.y;
 
-        imgX = Math.min(Math.max(imgX + dx, 0), canvas.width - uploadedImg.width * scale);
-        imgY = Math.min(Math.max(imgY + dy, 0), canvas.height - uploadedImg.height * scale);
+        const imgWidth = uploadedImg.width * scale;
+        const imgHeight = uploadedImg.height * scale;
+
+        imgX += dx;
+        imgY += dy;
+
+        if (imgWidth <= canvas.width) {
+          imgX = Math.max(Math.min(imgX, canvas.width - imgWidth), 0);
+        } else {
+          imgX = Math.min(Math.max(imgX, canvas.width - imgWidth), 0);
+        }
+
+        if (imgHeight <= canvas.height) {
+          imgY = Math.max(Math.min(imgY, canvas.height - imgHeight), 0);
+        } else {
+          imgY = Math.min(Math.max(imgY, canvas.height - imgHeight), 0);
+        }
 
         lastTouch.x = touch.clientX;
         lastTouch.y = touch.clientY;
 
         drawComposite();
       } else if (e.touches.length === 2) {
-        // Pinch-to-zoom
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        const [t1, t2] = e.touches;
+        const distance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         const scaleFactor = distance / lastTouch.scale;
 
         scale *= scaleFactor;
-        scale = Math.max(0.5, Math.min(scale, 2)); // Limit zoom scale (e.g., 0.5x to 2x)
+        scale = Math.max(0.5, Math.min(scale, 2)); // clamp scale
 
         adjustAfterZoom();
 
@@ -244,43 +263,49 @@
       }
     });
 
-    canvas.addEventListener('touchend', (e) => {
-      if (e.touches.length === 0) {
-        lastTouch.scale = 1;
-      }
+    canvas.addEventListener('touchend', () => {
+      lastTouch.scale = 1;
     });
 
-    // Zoom controls (Desktop)
+    // Zoom buttons
     zoomInBtn.addEventListener('click', () => {
       if (!uploadedImg) return;
       scale *= 1.1;
-      scale = Math.min(scale, 2); // Limit max zoom
+      scale = Math.min(scale, 2);
       adjustAfterZoom();
     });
 
     zoomOutBtn.addEventListener('click', () => {
       if (!uploadedImg) return;
       scale *= 0.9;
-      scale = Math.max(scale, 0.5); // Limit min zoom
+      scale = Math.max(scale, 0.5);
       adjustAfterZoom();
     });
 
     function adjustAfterZoom() {
       const imgWidth = uploadedImg.width * scale;
       const imgHeight = uploadedImg.height * scale;
-      imgX = Math.min(Math.max(imgX, 0), canvas.width - imgWidth);
-      imgY = Math.min(Math.max(imgY, 0), canvas.height - imgHeight);
+
+      if (imgWidth <= canvas.width) {
+        imgX = Math.max(Math.min(imgX, canvas.width - imgWidth), 0);
+      } else {
+        imgX = Math.min(Math.max(imgX, canvas.width - imgWidth), 0);
+      }
+
+      if (imgHeight <= canvas.height) {
+        imgY = Math.max(Math.min(imgY, canvas.height - imgHeight), 0);
+      } else {
+        imgY = Math.min(Math.max(imgY, canvas.height - imgHeight), 0);
+      }
+
       drawComposite();
     }
 
-    // Download
     download.addEventListener('click', () => {
       const link = document.createElement('a');
       link.download = 'framed_image.png';
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
-
-     
     });
   </script>
 </body>
