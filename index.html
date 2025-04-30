@@ -205,6 +205,12 @@
       const file = e.target.files[0];
       if (!file) return;
 
+      gtag('event', 'upload', {
+        'event_category': 'File Interaction',
+        'event_label': file.name,
+        'value': 1
+      });
+
       const reader = new FileReader();
       reader.onload = function (event) {
         const img = new Image();
@@ -375,6 +381,14 @@
       link.download = 'framed_image.png';
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
+
+ // Track download event in Google Analytics
+ gtag('event', 'download', {
+    'event_category': 'File Interaction',
+    'event_label': 'framed_image.png',
+    'value': 1
+  });
+
     });
   </script>
 </body>
