@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>IDLC Photo Frame</title>
+  <title>Photo Frame Overlay with Zoom and Counters</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-82C5ZZDF6X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+  
+    gtag('config', 'G-82C5ZZDF6X');
+  </script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -13,7 +21,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #f0f0f0;
+      background: #474747;
     }
     header {
       padding: 1rem;
@@ -26,12 +34,14 @@
       margin: 1rem;
       background: #474747;
       border: 1px solid #ccc;
+      border-radius: 25px;
     }
     canvas {
       width: 100%;
       height: auto;
       display: block;
       cursor: grab;
+      border-radius: 15px;
     }
     .controls {
       display: flex;
@@ -76,17 +86,14 @@
     <input type="file" accept="image/*" id="upload" />
     <button id="zoomIn">Zoom In</button>
     <button id="zoomOut">Zoom Out</button>
-    <button id="download">Download IDLC Photo</button>
+    <button id="download">Download Composite</button>
   </div>
 
   <div id="editor">
     <canvas id="canvas"></canvas>
   </div>
 
-  <div class="counter">
-    <p>Views: <span id="viewCount">0</span></p>
-    <p>Downloads: <span id="downloadCount">0</span></p>
-  </div>
+ 
 
   <script>
     const upload = document.getElementById('upload');
@@ -95,8 +102,7 @@
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
     const download = document.getElementById('download');
-    const viewCountDisplay = document.getElementById('viewCount');
-    const downloadCountDisplay = document.getElementById('downloadCount');
+
 
     let uploadedImg = null;
     let frameImage = new Image();
@@ -105,14 +111,7 @@
     let isDragging = false;
     let offsetX = 0, offsetY = 0;
 
-    // Initialize counters from localStorage or default to 0
-    let viewCount = localStorage.getItem('viewCount') ? parseInt(localStorage.getItem('viewCount')) : 0;
-    let downloadCount = localStorage.getItem('downloadCount') ? parseInt(localStorage.getItem('downloadCount')) : 0;
-
-    // Update counters on page load and save to localStorage
-    viewCount++;
-    localStorage.setItem('viewCount', viewCount);
-    viewCountDisplay.textContent = viewCount;
+    
 
     // Load the frame and set canvas size
     frameImage.src = 'IDLCframe.png';
@@ -281,10 +280,7 @@
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
 
-      // Increment and update download count
-      downloadCount++;
-      localStorage.setItem('downloadCount', downloadCount);
-      downloadCountDisplay.textContent = downloadCount;
+     
     });
   </script>
 </body>
