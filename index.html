@@ -18,6 +18,25 @@
     gtag('config', 'G-82C5ZZDF6X');
   </script>
 
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '1180376010058057',  // Your App ID
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v22.0'               // Your API version
+      });
+    };
+  
+    (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = 'https://connect.facebook.net/en_US/sdk.js';
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  </script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -154,6 +173,10 @@
 
   <div class="download-button">
     <button id="download">Download</button>
+  </div>
+
+  <div class="share-button">
+    <button id="fb-share">Share on Facebook</button>
   </div>
 
   <script>
@@ -363,6 +386,30 @@
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
     });
+
+    document.getElementById('fb-share').addEventListener('click', () => {
+        if (!uploadedImg) return;
+  
+        // Generate the image URL
+        const imageUrl = canvas.toDataURL('image/png');
+  
+        // Create a temporary upload service or use a cloud storage API
+        // For example, you can upload this image to an image hosting service
+        // and get the URL to share on Facebook.
+  
+        // For now, let's simulate that the image is hosted and share the URL.
+        FB.ui({
+          method: 'share',
+          href: imageUrl, // Here we use the generated image URL
+        }, function(response) {
+          if (response && !response.error_message) {
+            alert('Successfully shared on Facebook!');
+          } else {
+            alert('Error sharing on Facebook');
+          }
+        });
+      });
+  
   </script>
 </body>
 </html>
