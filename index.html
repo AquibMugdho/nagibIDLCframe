@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Photo Frame Overlay with Zoom</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #282828;
+    }
+    header {
+      padding: 1rem;
+      text-align: center;
+    }
+    #editor {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 1rem;
+      background: #282828;
+      border: 1px solid #d57070;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: grab;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    input[type="file"] {
+      display: block;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    @media (max-width: 600px) {
+      #editor {
+        max-width: 90vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Upload and Adjust Your Photo</h1>
+  </header>
+
+  <div class="controls">
+    <input type="file" accept="image/*" id="upload" />
+    <button id="zoomIn">Zoom In</button>
+    <button id="zoomOut">Zoom Out</button>
+    <button id="download">Download IDLC image</button>
+  </div>
+
+  <div id="editor">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const download = document.getElementById('download');
+
+    let uploadedImg = null;
+    let frameImage = new Image();
+    let imgX = 0, imgY = 0;
+    let scale = 1;
+    let isDragging = false;
+    let offsetX = 0, offsetY = 0;
+
+    // Load the frame and set canvas size
+    frameImage.src = 'IDLCframe.png';
+    frameImage.onload = function () {
+      canvas.width = frameImage.width;
+      canvas.height = frameImage.height;
+      drawComposite();
+    };
+
+    function drawComposite() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (uploadedImg) {
+        const imgWidth = uploadedImg.width * scale;
+        const imgHeight = uploadedImg.height * scale;
+        ctx.drawImage(uploadedImg, imgX, imgY, imgWidth, imgHeight);
+      }
+      ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+    }
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+          uploadedImg = img;
+
+          // Reset scale and center position
+          scale = 1;
+          const imgWidth = img.width * scale;
+          const imgHeight = img.height * scale;
+          imgX = (canvas.width - imgWidth) / 2;
+          imgY = (canvas.height - imgHeight) / 2;
+
+          drawComposite();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Drag to move image
+    canvas.addEventListener('mousedown', (e) => {
+      if (!uploadedImg) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const imgWidth = uploadedImg.width * scale;
+      const imgHeight = uploadedImg.height * scale;
+
+      if (
+        x >= imgX && x <= imgX + imgWidth &&
+        y >= imgY && y <= imgY + imgHeight
+      ) {
+        isDragging = true;
+        offsetX = x - imgX;
+        offsetY = y - imgY;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      imgX = x - offsetX;
+      imgY = y - offsetY;
+
+      drawComposite();
+    });
+
+    canvas.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener('mouseleave', () => isDragging = false);
+
+    // Zoom controls
+    zoomInBtn.addEventListener('click', () => {
+      if (!uploadedImg) return;
+      scale *= 1.1;
+      adjustAfterZoom();
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      if (!uploadedImg) return;
+      scale *= 0.9;
+      adjustAfterZoom();
+    });
+
+    function adjustAfterZoom() {
+      // Optional: Adjust position to stay centered
+      const imgWidth = uploadedImg.width * scale;
+      const imgHeight = uploadedImg.height * scale;
+      imgX = imgX - (imgWidth - uploadedImg.width * (scale / 1.1)) / 2;
+      imgY = imgY - (imgHeight - uploadedImg.height * (scale / 1.1)) / 2;
+      drawComposite();
+    }
+
+    // Download
+    download.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'framed_image.png';
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    });
+  </script>
+</body>
+</html>
