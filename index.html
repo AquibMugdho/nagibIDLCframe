@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Photo Frame Overlay with Zoom</title>
+  <title>Photo Frame Overlay with Zoom and Counters</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -13,7 +13,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #282828;
+      background: #f0f0f0;
     }
     header {
       padding: 1rem;
@@ -24,8 +24,8 @@
       width: 100%;
       max-width: 500px;
       margin: 1rem;
-      background: #282828;
-      border: 1px solid #d57070;
+      background: #474747;
+      border: 1px solid #ccc;
     }
     canvas {
       width: 100%;
@@ -55,6 +55,11 @@
     button:hover {
       background: #0056b3;
     }
+    .counter {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
+    }
     @media (max-width: 600px) {
       #editor {
         max-width: 90vw;
@@ -71,11 +76,16 @@
     <input type="file" accept="image/*" id="upload" />
     <button id="zoomIn">Zoom In</button>
     <button id="zoomOut">Zoom Out</button>
-    <button id="download">Download IDLC image</button>
+    <button id="download">Download Composite</button>
   </div>
 
   <div id="editor">
     <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="counter">
+    <p>Views: <span id="viewCount">0</span></p>
+    <p>Downloads: <span id="downloadCount">0</span></p>
   </div>
 
   <script>
@@ -85,6 +95,8 @@
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
     const download = document.getElementById('download');
+    const viewCountDisplay = document.getElementById('viewCount');
+    const downloadCountDisplay = document.getElementById('downloadCount');
 
     let uploadedImg = null;
     let frameImage = new Image();
@@ -92,6 +104,15 @@
     let scale = 1;
     let isDragging = false;
     let offsetX = 0, offsetY = 0;
+
+    // Initialize counters from localStorage or default to 0
+    let viewCount = localStorage.getItem('viewCount') ? parseInt(localStorage.getItem('viewCount')) : 0;
+    let downloadCount = localStorage.getItem('downloadCount') ? parseInt(localStorage.getItem('downloadCount')) : 0;
+
+    // Update counters on page load and save to localStorage
+    viewCount++;
+    localStorage.setItem('viewCount', viewCount);
+    viewCountDisplay.textContent = viewCount;
 
     // Load the frame and set canvas size
     frameImage.src = 'IDLCframe.png';
@@ -135,7 +156,7 @@
       reader.readAsDataURL(file);
     });
 
-    // Drag to move image
+    // Drag to move image (Desktop)
     canvas.addEventListener('mousedown', (e) => {
       if (!uploadedImg) return;
       const rect = canvas.getBoundingClientRect();
@@ -170,7 +191,65 @@
     canvas.addEventListener('mouseup', () => isDragging = false);
     canvas.addEventListener('mouseleave', () => isDragging = false);
 
-    // Zoom controls
+    // Touch events for mobile devices
+    let lastTouch = { x: 0, y: 0, scale: 1 };
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (!uploadedImg) return;
+      e.preventDefault();
+
+      if (e.touches.length === 1) {
+        // For drag (touchmove)
+        const touch = e.touches[0];
+        lastTouch.x = touch.clientX;
+        lastTouch.y = touch.clientY;
+      } else if (e.touches.length === 2) {
+        // For pinch-to-zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        lastTouch.scale = distance;
+      }
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (!uploadedImg) return;
+      e.preventDefault();
+
+      if (e.touches.length === 1) {
+        // Drag image
+        const touch = e.touches[0];
+        const dx = touch.clientX - lastTouch.x;
+        const dy = touch.clientY - lastTouch.y;
+
+        imgX += dx;
+        imgY += dy;
+
+        lastTouch.x = touch.clientX;
+        lastTouch.y = touch.clientY;
+
+        drawComposite();
+      } else if (e.touches.length === 2) {
+        // Pinch-to-zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        const scaleFactor = distance / lastTouch.scale;
+
+        scale *= scaleFactor;
+        adjustAfterZoom();
+
+        lastTouch.scale = distance;
+      }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        lastTouch.scale = 1;
+      }
+    });
+
+    // Zoom controls (Desktop)
     zoomInBtn.addEventListener('click', () => {
       if (!uploadedImg) return;
       scale *= 1.1;
@@ -184,7 +263,6 @@
     });
 
     function adjustAfterZoom() {
-      // Optional: Adjust position to stay centered
       const imgWidth = uploadedImg.width * scale;
       const imgHeight = uploadedImg.height * scale;
       imgX = imgX - (imgWidth - uploadedImg.width * (scale / 1.1)) / 2;
@@ -198,6 +276,11 @@
       link.download = 'framed_image.png';
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
+
+      // Increment and update download count
+      downloadCount++;
+      localStorage.setItem('downloadCount', downloadCount);
+      downloadCountDisplay.textContent = downloadCount;
     });
   </script>
 </body>
